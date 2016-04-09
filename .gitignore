@@ -88,7 +88,7 @@ ENV/
 .ropeproject
 
 # IntelliJ
-.idea
+.idea/
 
 # OS X
 .DS_Store
