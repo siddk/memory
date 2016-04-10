@@ -4,7 +4,7 @@ train.py
 Function definitions for all training code, including both normal training (with Softmax), and
 linear-start training (without Softmax initially, then added later).
 """
-from ..util.analytics import Progress
+from util.analytics import Progress
 from memn2n.nn import Softmax
 import math
 import numpy as np
