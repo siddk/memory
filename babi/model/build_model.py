@@ -3,6 +3,8 @@ build_model.py
 
 Build entire memory network from individual layers. Takes a bAbI Configuration as input.
 """
+from memn2n.memory import *
+from memn2n.nn import *
 import numpy as np
 
 
@@ -36,6 +38,7 @@ def build_model(general_config):
     voc_sz = train_config["voc_sz"]
 
     if not use_bow:
+        # Position Encoding
         train_config["weight"] = np.ones((in_dim, max_words), np.float32)
         for i in range(in_dim):
             for j in range(max_words):

@@ -9,6 +9,9 @@ References:
     https://github.com/vinhkhuc/MemN2N-babi-python (Vinh Khuc's Python Implementation)
     https://github.com/facebook/MemNN/tree/master/MemN2N-babi-matlab (Original Matlab Code)
 """
+from model.build_model import build_model
+from model.test import test
+from model.train import train, train_linear_start
 from util.config import BabiConfig
 from util.parser import parse_babi_task
 import argparse
@@ -47,13 +50,15 @@ def run_task(data_directory, task_id):
     general_config = BabiConfig(train_story, train_questions, dictionary)
 
     memory, model, loss = build_model(general_config)
-    #
-    # if general_config.linear_start:
-    #     train_linear_start(train_story, train_questions, train_qstory, memory, model, loss, general_config)
-    # else:
-    #     train(train_story, train_questions, train_qstory, memory, model, loss, general_config)
-    #
-    # test(test_story, test_questions, test_qstory, memory, model, loss, general_config)
+
+    if general_config.linear_start:
+        train_linear_start(train_story, train_questions, train_qstory, memory, model, loss,
+                           general_config)
+    else:
+        train(train_story, train_questions, train_qstory, memory, model, loss, general_config)
+
+    test(test_story, test_questions, test_qstory, memory, model, loss, general_config)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -77,9 +82,9 @@ if __name__ == "__main__":
     print("Using data from %s" % args.data_dir)
     if args.all_tasks:
         pass
-        #run_all_tasks(data_dir)
+        # run_all_tasks(data_dir)
     elif args.joint_tasks:
         pass
-        #run_joint_tasks(data_dir)
+        # run_joint_tasks(data_dir)
     else:
         run_task(data_dir, task_id=args.task)

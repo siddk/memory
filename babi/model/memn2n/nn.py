@@ -355,7 +355,6 @@ class LookupTable(Module):
     """
     Lookup table
     """
-
     def __init__(self, voc_sz, out_dim):
         """
         Constructor
