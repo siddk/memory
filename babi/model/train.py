@@ -100,6 +100,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss, gener
             for i in range(1, nhops):
                 memory[i].data = memory[0].data
 
+            import sys
             out = model.fprop(input_data)
             total_cost += loss.fprop(out, target_data)
             total_err += loss.get_error(out, target_data)
@@ -110,7 +111,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss, gener
             model.update(params)
 
             for i in range(nhops):
-                memory[i].emb_query.weight.D[:, 0] = 0
+                memory[i].emb_query.weight.D[:, 0] = 0  # Bias Layer
 
         # Validation
         total_val_err = 0.

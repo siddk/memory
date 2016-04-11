@@ -128,7 +128,7 @@ class MemoryBoW(Memory):
 class MemoryL(Memory):
     """
     MemoryL:
-        Query module  = Parallel((LookupTable + ElemMult + Sum(1)) + Identity) + MatVecProd with
+        Query module  = Parallel((LookupTable + ElemMult + Sum(1) + Identity) + MatVecProd with
         transpose + Softmax
         Output module = Parallel((LookupTable + ElemMult + Sum(1)) + Identity) + MatVecProd
     """

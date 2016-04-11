@@ -60,6 +60,16 @@ def run_task(data_directory, task_id):
     test(test_story, test_questions, test_qstory, memory, model, loss, general_config)
 
 
+def run_all_tasks(data_directory):
+    """
+    Train and test for all tasks.
+
+    :param data_directory Path to data directory
+    """
+    print("Training and testing for all tasks ...")
+    for t in range(20):
+        run_task(data_directory, task_id=t + 1)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--data-dir", default="data/en",
@@ -81,8 +91,7 @@ if __name__ == "__main__":
 
     print("Using data from %s" % args.data_dir)
     if args.all_tasks:
-        pass
-        # run_all_tasks(data_dir)
+        run_all_tasks(data_dir)
     elif args.joint_tasks:
         pass
         # run_joint_tasks(data_dir)
