@@ -28,21 +28,40 @@ def run_task(data_directory, task):
 
     train, test = get_stories(train_data), get_stories(test_data)
     vocab = sorted(reduce(lambda x, y: x | y,
-                          (set(story + q + [answer]) for story, q, answer in train + test)))
+                          (set(reduce(lambda x, y: x + y, story) + q + [answer]) for
+                           story, q, answer in train + test)))
 
-    vocab_size = len(vocab) + 1
     vocab = dict((c, i + 1) for i, c in enumerate(vocab))
-    s_max = max(map(len, (x for x, _, _ in train + test)))
-    q_max = max(map(len, (x for _, x, _ in train + test)))
+    story_max = max(map(len, (x for x, _, _ in train + test)))
+    sentence_max = 0
+    for a, b, _ in train + test:
+        if len(b) > sentence_max:
+            sentence_max = len(b)
+        for s in a:
+            if len(s) > sentence_max:
+                sentence_max = len(s)
 
-    s_train, q_train, a_train = vectorize_stories(train, vocab, s_max, q_max)
-    s_test, q_test, a_test = vectorize_stories(test, vocab, s_max, q_max)
+    s_train, q_train, a_train = vectorize_stories(train, vocab, story_max, sentence_max)
+    s_test, q_test, a_test = vectorize_stories(test, vocab, story_max, sentence_max)
 
-    model = MemLSTM(s_train, q_train, a_train)
-    model.train()
-    loss, acc = model.model.evaluate([s_test, q_test], a_test, batch_size=32)
-    print "Testing Accuracy", acc
-    return model, loss, acc
+    # Build new concatenated training sets
+    qtrain_repeat = np.tile(q_train, story_max).reshape(s_train.shape)
+    qtest_repeat = np.tile(q_test, story_max).reshape(s_train.shape)
+
+    atrain_repeat = np.tile(a_train, story_max).reshape(s_train.shape[:-1] + a_train.shape[-1:])
+    atest_repeat = np.tile(a_test, story_max).reshape(s_train.shape[:-1] + a_test.shape[-1:])
+
+    train_x = np.concatenate((s_train, qtrain_repeat), axis=-1)
+    train_y = atrain_repeat
+
+    test_x = np.concatenate((s_test, qtest_repeat), axis=-1)
+    test_y = atest_repeat
+
+    # model = MemLSTM(s_train, q_train, a_train)
+    # model.train()
+    # loss, acc = model.model.evaluate([s_test, q_test], a_test, batch_size=32)
+    # print "Testing Accuracy", acc
+    # return model, loss, acc
 
 
 if __name__ == "__main__":

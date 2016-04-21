@@ -20,9 +20,8 @@ def get_stories(filename, max_length=None):
     with open(filename, 'r') as f:
         data = parse_stories(f.readlines())
         data = [(story, q, answer) for story, q, answer in data]
-        flatten = lambda data: reduce(lambda x, y: x + y, data)
-        data = [(flatten(story), q, answer) for story, q, answer in data if not max_length or
-                len(flatten(story)) < max_length]
+        data = [(story, q, answer) for story, q, answer in data if not max_length or
+                len(story) < max_length]
         return data
 
 
@@ -75,15 +74,32 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
     :param query_maxlen: Maximum question length.
     :return: Vectorized data.
     """
-    X = []
-    Xq = []
-    Y = []
+    stories, queries, answers = [], [], []
     for story, query, answer in data:
-        x = [word_idx[w] for w in story]
-        xq = [word_idx[w] for w in query]
-        y = np.zeros(len(word_idx) + 1)  # let's not forget that index 0 is reserved
-        y[word_idx[answer]] = 1
-        X.append(x)
-        Xq.append(xq)
-        Y.append(y)
-    return pad_sequences(X, maxlen=story_maxlen), pad_sequences(Xq, maxlen=query_maxlen), np.array(Y)
+        s = []
+        for line in story:
+            s.append([word_idx[w] for w in line])
+        q = [word_idx[w] for w in query]
+        a = np.zeros(len(word_idx) + 1)   # Let's not forget that index 0 is reserved
+        a[word_idx[answer]] = 1
+
+        assert len(q) <= query_maxlen
+        for i in range(len(s)):
+            assert len(s[i]) <= query_maxlen
+            while len(s[i]) < query_maxlen:
+                s[i].append(0)
+
+        if len(s) > story_maxlen:
+            s = s[::-1][:50][::-1]
+
+        while len(s) < story_maxlen:
+            s.append([0 for _ in range(query_maxlen)])
+
+        while len(q) < query_maxlen:
+            q.append(0)
+
+        stories.append(s)
+        queries.append(q)
+        answers.append(a)
+
+    return np.array(stories, dtype='float32'), np.array(queries, dtype='float32'), np.array(answers, dtype='float32')
