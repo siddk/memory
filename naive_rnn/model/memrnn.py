@@ -3,59 +3,44 @@ memrnn.py
 
 Core model file, defines keras LSTM Model for bAbI RNN.
 """
-from keras.layers import Dense, Dropout, Embedding, GRU, LSTM, Merge, RepeatVector
+from keras.layers.wrappers import TimeDistributed
+from keras.layers import Dense, Embedding, Flatten, LSTM, Reshape
 from keras.models import Sequential
 import numpy as np
 
 
 class MemLSTM:
-    def __init__(self, train_s, train_q, train_a, embedding_size=50):
+    def __init__(self, train_x, train_y, embedding_size=50, memory_size=100):
         """
         Instantiate a MemLSTM Model with the training data for stories, questions, and answers.
 
-        :param train_s: Story tensor with shape (N, STORY_LEN, SENTENCE_LEN)
-        :param train_q: Query tensor with shape (N, SENTENCE_LEN)
-        :param train_a: Answer tensor with one-hot shape (N, VOCAB_SIZE)
+        :param train_x: Story + Query tensor with shape (N, STORY_SIZE, SENTENCE_SIZE)
+        :param train_y: Answer tensor with one-hot shape (N, STORY_LEN, VOCAB_SIZE)
         """
-        self.train_s, self.train_q, self.train_a = train_s, train_q, train_a
-        self.N, self.STORY_SIZE = train_s.shape
-        _, self.QUERY_SIZE = train_q.shape
-        _, self.V = train_a.shape
-        self.EMBEDDING_SIZE = embedding_size
+        self.train_x, self.train_y = train_x, train_y
+        self.N, self.STORY_SIZE, self.SENTENCE_SIZE = train_x.shape
+        _, _, self.V = train_y.shape
+        self.EMBEDDING_SIZE, self.MEMORY_SIZE = embedding_size, memory_size
 
-        self.model = self.build_model()
+        self.model = self.build_model2()
 
     def build_model(self):
         """
-        Build Keras model of MemLSTM
+        Build Keras Model
         """
-        story_rnn = Sequential()
-        # Shape: (N, STORY_SIZE)
-        story_rnn.add(Embedding(input_dim=self.V, output_dim=self.EMBEDDING_SIZE,
-                                input_length=self.STORY_SIZE))
-        story_rnn.add(Dropout(0.3))
-        # Shape: (N, STORY_SIZE, EMBEDDING_SIZE)
-
-        query_rnn = Sequential()
-        # Shape: (N, QUERY_SIZE)
-        query_rnn.add(Embedding(input_dim=self.V, output_dim=self.EMBEDDING_SIZE,
-                                input_length=self.QUERY_SIZE))
-        query_rnn.add(Dropout(0.3))
-        # Shape: (N, QUERY_SIZE, EMBEDDING_SIZE)
-        query_rnn.add(GRU(self.EMBEDDING_SIZE, return_sequences=False))
-        # Shape: (N, EMBEDDING_SIZE)
-        query_rnn.add(RepeatVector(self.STORY_SIZE))
-        # Shape: (N, STORY_SIZE, EMBEDDING_SIZE)
-
         model = Sequential()
-        # Shape 1: (N, STORY_SIZE, EMBEDDING_SIZE) Shape 2: (N, STORY_SIZE, EMBEDDING_SIZE)
-        model.add(Merge([story_rnn, query_rnn], mode='sum'))
-        # Shape: (N, STORY_SIZE, EMBEDDING_SIZE)
-        model.add(GRU(self.EMBEDDING_SIZE, return_sequences=False))
-        model.add(Dropout(0.3))
-        # Shape: (N, EMBEDDING_SIZE)
-        model.add(Dense(self.V, activation='softmax'))
-        # Shape: (N, VOCAB_SIZE)
+        # Input Shape: (_, STORY_SIZE, SENTENCE_SIZE)
+        model.add(TimeDistributed(Embedding(input_dim=self.V, output_dim=self.EMBEDDING_SIZE,
+                                            input_length=self.SENTENCE_SIZE),
+                                  input_shape=(self.STORY_SIZE, self.SENTENCE_SIZE)))
+        # Shape: (_, STORY_SIZE, SENTENCE_SIZE, EMBEDDING_SIZE)
+        model.add(TimeDistributed(Flatten()))
+        # Shape: (_, STORY_SIZE, SENTENCE_SIZE * EMBEDDING_SIZE)
+        model.add(LSTM(self.MEMORY_SIZE, return_sequences=True))
+        # Shape: (_, STORY_SIZE, MEMORY_SIZE)
+        model.add(TimeDistributed(Dense(self.V, activation='softmax')))
+        # Shape: (_, STORY_SIZE, VOCAB_SIZE) --> Softmax
+
         return model
 
     def train(self):
@@ -64,5 +49,26 @@ class MemLSTM:
         """
         self.model.compile(optimizer='adam', loss='categorical_crossentropy',
                            metrics=['accuracy'])
-        self.model.fit([self.train_s, self.train_q], self.train_a, batch_size=32, nb_epoch=100,
+        self.model.fit(self.train_x, self.train_y, batch_size=32, nb_epoch=100,
                        validation_split=0.05)
+
+    def build_model2(self):
+        """
+        Build Keras model of MemLSTM
+        """
+        self.train_x = np.reshape(self.train_x, (self.N, self.STORY_SIZE * self.SENTENCE_SIZE))
+        model = Sequential()
+        # Shape: (N, STORY_SIZE * SENTENCE_SIZE)
+        model.add(Embedding(input_dim=self.V, output_dim=self.EMBEDDING_SIZE,
+                            input_length=self.STORY_SIZE * self.SENTENCE_SIZE, dropout=0.3))
+        # Shape: (N, STORY_SIZE * SENTENCE_SIZE, EMBEDDING_SIZE)
+        model.add(Reshape((self.STORY_SIZE, self.SENTENCE_SIZE, self.EMBEDDING_SIZE)))
+        # Shape: (N, STORY_SIZE, SENTENCE_SIZE, EMBEDDING_SIZE)
+        model.add(TimeDistributed(Flatten()))
+        # Shape: (N, STORY_SIZE, SENTENCE_SIZE * EMBEDDING_SIZE)
+        model.add(LSTM(self.MEMORY_SIZE, return_sequences=True))
+        # Shape: (N, STORY_SIZE, MEMORY_SIZE)
+        model.add(TimeDistributed(Dense(self.V, activation='softmax')))
+        # Shape: (N, STORY_SIZE, VOCAB_SIZE) --> Softmax
+
+        return model

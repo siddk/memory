@@ -11,7 +11,7 @@ import glob
 import os
 import sys
 
-EMBEDDING_SIZE = 50
+EMBEDDING_SIZE = 20
 
 
 def run_task(data_directory, task):
@@ -46,22 +46,25 @@ def run_task(data_directory, task):
 
     # Build new concatenated training sets
     qtrain_repeat = np.tile(q_train, story_max).reshape(s_train.shape)
-    qtest_repeat = np.tile(q_test, story_max).reshape(s_train.shape)
+    qtest_repeat = np.tile(q_test, story_max).reshape(s_test.shape)
 
     atrain_repeat = np.tile(a_train, story_max).reshape(s_train.shape[:-1] + a_train.shape[-1:])
-    atest_repeat = np.tile(a_test, story_max).reshape(s_train.shape[:-1] + a_test.shape[-1:])
+    atest_repeat = np.tile(a_test, story_max).reshape(s_test.shape[:-1] + a_test.shape[-1:])
 
     train_x = np.concatenate((s_train, qtrain_repeat), axis=-1)
     train_y = atrain_repeat
 
     test_x = np.concatenate((s_test, qtest_repeat), axis=-1)
+    n, st, ss = test_x.shape
+    test_x = np.reshape(test_x, (n, st * ss))
     test_y = atest_repeat
 
-    # model = MemLSTM(s_train, q_train, a_train)
-    # model.train()
-    # loss, acc = model.model.evaluate([s_test, q_test], a_test, batch_size=32)
-    # print "Testing Accuracy", acc
-    # return model, loss, acc
+    # Build, train, and evaluate model
+    model = MemLSTM(train_x, train_y)
+    model.train()
+    loss, acc = model.model.evaluate(test_x, test_y, batch_size=32)
+    print "Testing Accuracy", acc
+    return model, loss, acc
 
 
 if __name__ == "__main__":

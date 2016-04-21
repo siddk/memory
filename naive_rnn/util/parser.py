@@ -102,4 +102,4 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
         queries.append(q)
         answers.append(a)
 
-    return np.array(stories, dtype='float32'), np.array(queries, dtype='float32'), np.array(answers, dtype='float32')
+    return np.array(stories, dtype='int'), np.array(queries, dtype='int'), np.array(answers, dtype='int')
