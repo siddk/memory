@@ -10,12 +10,12 @@ import numpy as np
 
 
 class MemLSTM:
-    def __init__(self, train_x, train_y, embedding_size=50, memory_size=100):
+    def __init__(self, train_x, train_y, embedding_size=100, memory_size=100):
         """
         Instantiate a MemLSTM Model with the training data for stories, questions, and answers.
 
         :param train_x: Story + Query tensor with shape (N, STORY_SIZE, SENTENCE_SIZE)
-        :param train_y: Answer tensor with one-hot shape (N, STORY_LEN, VOCAB_SIZE)
+        :param train_y: Answer tensor with one-hot shape (N, STORY_SIZE, VOCAB_SIZE)
         """
         self.train_x, self.train_y = train_x, train_y
         self.N, self.STORY_SIZE, self.SENTENCE_SIZE = train_x.shape
@@ -43,15 +43,6 @@ class MemLSTM:
 
         return model
 
-    def train(self):
-        """
-        Compile and fit the model.
-        """
-        self.model.compile(optimizer='adam', loss='categorical_crossentropy',
-                           metrics=['accuracy'])
-        self.model.fit(self.train_x, self.train_y, batch_size=32, nb_epoch=100,
-                       validation_split=0.05)
-
     def build_model2(self):
         """
         Build Keras model of MemLSTM
@@ -72,3 +63,13 @@ class MemLSTM:
         # Shape: (N, STORY_SIZE, VOCAB_SIZE) --> Softmax
 
         return model
+
+    def train(self):
+        """
+        Compile and fit the model.
+        """
+        self.model.compile(optimizer='Adam', loss='mse',
+                           metrics=['accuracy'])
+        self.model.fit(self.train_x, self.train_y, batch_size=32, nb_epoch=100,
+                       validation_split=0.05)
+
