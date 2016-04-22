@@ -64,7 +64,8 @@ def run_task(data_directory, task):
     model.train()
     loss, acc = model.model.evaluate(test_x, test_y, batch_size=32)
     print "Testing Accuracy", acc
-    return model, loss, acc
+    out = model.model.predict(test_x, batch_size=32)
+    return model, loss, acc, out, vocab
 
 
 if __name__ == "__main__":
@@ -89,4 +90,4 @@ if __name__ == "__main__":
     print("Using data from %s" % args.data_dir)
 
     # Run model on given task
-    mem_lstm, l, a = run_task(data_dir, task=args.task)
+    mem_lstm, l, a, predictions, v = run_task(data_dir, task=args.task)
