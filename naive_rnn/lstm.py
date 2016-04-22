@@ -62,10 +62,43 @@ def run_task(data_directory, task):
     # Build, train, and evaluate model
     model = MemLSTM(train_x, train_y)
     model.train()
-    loss, acc = model.model.evaluate(test_x, test_y, batch_size=32)
-    print "Testing Accuracy", acc
     out = model.model.predict(test_x, batch_size=32)
-    return model, loss, acc, out, vocab
+    return model, out, vocab, test_y
+
+
+def evaluate_predictions(p, vocab, test_data):
+    """
+    Look at predictions, and evaluate last element to evaluate test accuracy.
+
+    :param p:
+    :param vocab:
+    :param test_data:
+    """
+    voc = {i: c for c, i in vocab.items()}
+    import pickle
+    with open('task_1_predictions.pik', 'w') as f:
+        pickle.dump(p, f)
+
+    correct, total = 0, 0
+    for index in range(len(p)):
+        preds = get_prediction(p, index, voc)
+        answer = voc[test_data[index].argmax()]
+        print "ANSWER:", index, preds[-1], answer
+        if preds[-1] == answer:
+            correct += 1
+        total += 1
+
+    return float(correct) / float(total)
+
+
+def get_prediction(p, index, vocab):
+    curr = p[index]
+    preds = []
+    for i in curr:
+        pred = vocab[i.argmax()]
+        preds.append(pred)
+        print pred
+    return preds
 
 
 if __name__ == "__main__":
@@ -90,4 +123,6 @@ if __name__ == "__main__":
     print("Using data from %s" % args.data_dir)
 
     # Run model on given task
-    mem_lstm, l, a, predictions, v = run_task(data_dir, task=args.task)
+    mem_lstm, predictions, v, y = run_task(data_dir, task=args.task)
+    acc = evaluate_predictions(predictions, v, y)
+    print "Accuracy", acc

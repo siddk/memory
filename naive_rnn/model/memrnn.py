@@ -10,7 +10,7 @@ import numpy as np
 
 
 class MemLSTM:
-    def __init__(self, train_x, train_y, embedding_size=100, memory_size=100):
+    def __init__(self, train_x, train_y, embedding_size=128, memory_size=100):
         """
         Instantiate a MemLSTM Model with the training data for stories, questions, and answers.
 
@@ -48,6 +48,7 @@ class MemLSTM:
         Build Keras model of MemLSTM
         """
         self.train_x = np.reshape(self.train_x, (self.N, self.STORY_SIZE * self.SENTENCE_SIZE))
+
         model = Sequential()
         # Shape: (N, STORY_SIZE * SENTENCE_SIZE)
         model.add(Embedding(input_dim=self.V, output_dim=self.EMBEDDING_SIZE,
